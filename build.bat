@@ -1,1 +1,1 @@
-clang++ -target cheerp -cheerp-mode=wasm -cheerp-wasm-loader=JavaScript/Main.js -O2 -o Main.wasm Main.cpp
+clang++ -target cheerp -cheerp-mode=wasm -cheerp-wasm-loader=JavaScript/Main.js -O2 -o Main.wasm Main.cpp Renderer.cpp Utility.cpp Shapes.cpp
