@@ -1,50 +1,47 @@
 #include <cheerp/clientlib.h>
 #include <cheerp/client.h>
+#include <cheerp/webgl.h>
+#include <vector>
 
-[[cheerp::genericjs]] void domOutput( const char* toLog ) {
+[[cheerp::genericjs]] void DOMOutput( const char* toLog ) {
     	client::console.log( toLog );
 }
 
-
-struct [[cheerp::genericjs]] Application
+struct [[cheerp::genericjs]] Renderer
 {
-	static client::CanvasRenderingContext2D* GetRenderingContext( const char* canvasName, int height_, int width_ )
+	static void Initialize( const char* canvasName, int height, int width )
 	{
-		x = 0;
-		canvas = ( client::HTMLCanvasElement* ) client::document.getElementById( canvasName );
-		canvas->set_width( width = width_ );
-		canvas->set_height( height = height_ );
-		client::document.get_body()->appendChild( canvas );
-		return ( context2D = ( client::CanvasRenderingContext2D* ) canvas->getContext( "2d" ) );
+		canvas = static_cast< client::HTMLCanvasElement* >( client::document.getElementById( canvasName ) );
+		canvas->set_height( height );
+		canvas->set_width( width );
+		gl = ( client::WebGLRenderingContext* ) canvas->getContext( "experimental-webgl" );
+		gl->clearColor( 0, 0, 1, 1 );
 	}
-
-	static void TestOut( const char* text ) {
-		context2D->set_font( "24px sans-serif" );
-		context2D->fillText( text, ++x, height - 24 );
+	static void Update()
+	{
+		gl->clear( gl->get_COLOR_BUFFER_BIT() );
+		client::requestAnimationFrame( cheerp::Callback( Update ) );
 	}
-
-
-	static void Init() {
-		client::requestAnimationFrame( cheerp::Callback( RunLoop ) );
-	}
-
-	static int x;
-	static int height, width;
 	static client::HTMLCanvasElement* canvas;
-	static client::CanvasRenderingContext2D* context2D;
-
-	private:
-		static void RunLoop() {
-			Application::TestOut( "test" );
-			client::requestAnimationFrame( cheerp::Callback( RunLoop ) );
-		}
+	static client::WebGLRenderingContext* gl;
+	static const char* vertexShaderSource;
+	static const char* fragmentShaderSource;
 };
 
+const char* Renderer::vertexShaderSource = 
+	"attribute vec3 a_position;"
+	"void main() {"
+	"\tgl_Position = vec4( a_position.x, a_position.y, a_position.z, 1.0 );"
+	"}";
+const char* Renderer::fragmentShaderSource = 
+	"void main() {"
+	"\tgl_FragColor = vec4( 0.0, 1.0, 0.0, 1.0 );"
+	"}";
 
 void webMain()
 {
-    	domOutput( "<begin>" );
-		Application::GetRenderingContext( "renderCanvas", 400, 400 );
-		Application::Init();
-    	domOutput( "<end>" );
+    	DOMOutput( "<begin>" );
+		Renderer::Initialize( "glcanvas", 400, 400 );
+		Renderer::Update();
+    	DOMOutput( "<end>" );
 }
