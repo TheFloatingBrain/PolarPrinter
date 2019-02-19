@@ -2,6 +2,9 @@
 #include <cheerp/client.h>
 #include <cheerp/webgl.h>
 #include <vector>
+#include <math.h>
+#define PI_M 3.1415f
+#define TAU_M ( 2.0f * PI_M )
 
 [[cheerp::genericjs]] void DOMOutput( const char* toLog ) {
     	client::console.log( toLog );
@@ -9,8 +12,9 @@
 
 struct [[cheerp::genericjs]] Renderer
 {
-	static void Initialize( const char* canvasName, int height, int width )
+	static void Initialize( const char* canvasName, float* verticies, size_t verticyCount_, int height, int width )
 	{
+		verticyCount = verticyCount_;
 		canvas = static_cast< client::HTMLCanvasElement* >( client::document.getElementById( canvasName ) );
 		canvas->set_height( height );
 		canvas->set_width( width );
@@ -29,7 +33,7 @@ struct [[cheerp::genericjs]] Renderer
 	static void Update()
 	{
 		gl->clear( gl->get_COLOR_BUFFER_BIT() );
-		gl->drawArrays( gl->get_TRIANGLES(), 0, 3 );
+		gl->drawArrays( gl->get_TRIANGLES(), 0, verticyCount );
 		client::requestAnimationFrame( cheerp::Callback( Update ) );
 	}
 
@@ -52,7 +56,8 @@ struct [[cheerp::genericjs]] Renderer
 	static client::WebGLRenderingContext* gl;
 	static const char* vertexShaderSource;
 	static const char* fragmentShaderSource;
-	static float verticies[];
+	static size_t verticyCount;
+	//static float verticies[];
 	static client::WebGLBuffer* vertexBuffer;
 	static client::WebGLShader* vertexShader, *fragmentShader;
 	static client::WebGLProgram* shaderProgram;
@@ -67,16 +72,58 @@ const char* Renderer::fragmentShaderSource =
 	"void main() {"
 	"\tgl_FragColor = vec4( 0.0, 1.0, 0.0, 1.0 );"
 	"}";
-
+/*
 float Renderer::verticies[] = { 
 						0.0f, 0.0f, 0.0f,
 						1.0f, 0.0f, 0.0f,
 						.5f, 1.0f, 0.0f
-					 };
+					 };*/
+
+void PushPoint( std::vector< float >&& toPush, float x, float y, float z )
+{
+	toPush.push_back( x );
+	toPush.push_back( y );
+	toPush.push_back( z );
+}
+
+std::vector< float > GenerateGear( float scale, float toothLength )
+{
+	std::vector< float > circle;
+	const float POINTS_C = 20.f;
+	const float DELTA_C = TAU_M / POINTS_C;
+	float lastX = cos( 0 ) * scale;
+	float lastY = sin( 0 ) * scale;
+	for( float i = 0.f; i < POINTS_C; i += 1.f )//POINTS_C; i += 1.f )
+	{
+		//Point on circle.//
+		circle.push_back( 0.f * scale );
+		circle.push_back( 0.f * scale );
+		circle.push_back( 0.f * scale );
+		circle.push_back( lastX );
+		circle.push_back( lastY );
+		circle.push_back( 0.f * scale );
+		circle.push_back( lastX = ( cos( DELTA_C * ( i + 1.f ) ) * scale ) );
+		circle.push_back( lastY = ( sin( DELTA_C * ( i + 1.f ) ) * scale ) );
+		circle.push_back( 0.f * scale );
+		//Tip on gear.//
+		circle.push_back( lastX );
+		circle.push_back( lastY );
+		circle.push_back( 0.f * scale );
+		circle.push_back( cos( DELTA_C * i ) * scale );
+		circle.push_back( sin( DELTA_C * i ) * scale );
+		circle.push_back( 0.f * scale );
+		circle.push_back( cos( DELTA_C * ( i + .5f ) ) * ( 1.f + toothLength ) * scale );
+		circle.push_back( sin( DELTA_C * ( i + .5f ) ) * ( 1.f + toothLength ) * scale );
+		circle.push_back( 0.f * scale );
+	}
+	return circle;
+}
+
 void webMain()
 {
     	DOMOutput( "<begin>" );
-		Renderer::Initialize( "glcanvas", 400, 400 );
+		auto verts = GenerateGear( .5f, .3f );
+		Renderer::Initialize( "glcanvas", verts.data(), verts.size() / 3, 400, 400 );
 		Renderer::Update();
     	DOMOutput( "<end>" );
 }
