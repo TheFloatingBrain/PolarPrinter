@@ -3,10 +3,10 @@
 #define PI_M 3.1415f
 #define TAU_M ( 2.0f * PI_M )
 
-std::vector< float > GenerateGear( float scale, float toothLength )
+std::vector< float > GenerateGear( unsigned int sides, float scale, float toothLength )
 {
 	std::vector< float > gear;
-	const float POINTS_C = 20.f;
+	const float POINTS_C = ( float ) sides;
 	const float DELTA_C = TAU_M / POINTS_C;
 	float lastX = cos( 0 ) * scale;
 	float lastY = sin( 0 ) * scale;
