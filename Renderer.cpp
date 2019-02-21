@@ -38,6 +38,8 @@ void Renderer::Update()
 	cameraAngles = gl->getUniformLocation( shaderProgram, "cameraAngles" );
 
 	cameraAnglesVector[ 2 ] += .01f;
+	cameraAnglesVector[ 1 ] += .001f;
+	cameraAnglesVector[ 0 ] += .0001f;
 	cameraPositionVector[ 2 ] -= .01f;
 	
 	gl->uniform3fv( cameraPosition, cheerp::MakeTypedArray( cameraPositionVector ) );
