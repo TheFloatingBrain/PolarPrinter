@@ -8,6 +8,7 @@
         static void Initialize( const char* canvasName, float* verticies, size_t verticyCount_, int height, int width );
         static void Update();
         static void CreateShader();
+        static void UpdatePerspective();
 
         static client::HTMLCanvasElement* canvas;
         static client::WebGLRenderingContext* gl;
@@ -17,5 +18,8 @@
         static client::WebGLBuffer* vertexBuffer;
         static client::WebGLShader* vertexShader, *fragmentShader;
         static client::WebGLProgram* shaderProgram;
+        static client::WebGLUniformLocation* cameraPosition, *cameraAngles, *far, *near, *width, *height;
+        static float* cameraPositionVector;
+        static float* cameraAnglesVector;
     };
 #endif
