@@ -18,7 +18,8 @@
         static client::WebGLBuffer* vertexBuffer;
         static client::WebGLShader* vertexShader, *fragmentShader;
         static client::WebGLProgram* shaderProgram;
-        static client::WebGLUniformLocation* cameraPosition, *cameraAngles, *far, *near, *width, *height;
+        static client::WebGLUniformLocation* cameraPosition, *cameraAngles, *perspective;
+        static float frustrumFar, frustrumNear, frustrumWidth, frustrumHeight;
         static float* cameraPositionVector;
         static float* cameraAnglesVector;
     };

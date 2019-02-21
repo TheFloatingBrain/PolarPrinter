@@ -11,6 +11,10 @@ void Renderer::Initialize( const char* canvasName, float* verticies, size_t vert
 	cameraAnglesVector[ 0 ] = 0.f;
 	cameraAnglesVector[ 1 ] = 0.f;
 	cameraAnglesVector[ 2 ] = 0.f;
+	frustrumNear = 0.0f;
+	frustrumFar = 10.0f;
+	frustrumWidth = 1.0f;
+	frustrumHeight = 1.0f;
 	canvas = static_cast< client::HTMLCanvasElement* >( client::document.getElementById( canvasName ) );
 	canvas->set_height( height );
 	canvas->set_width( width );
@@ -33,20 +37,21 @@ void Renderer::Update()
 	cameraPosition = gl->getUniformLocation( shaderProgram, "cameraPosition" );
 	cameraAngles = gl->getUniformLocation( shaderProgram, "cameraAngles" );
 
-	near = gl->getUniformLocation( shaderProgram, "near" );
-	far = gl->getUniformLocation( shaderProgram, "far" );
-	width = gl->getUniformLocation( shaderProgram, "width" );
-	height = gl->getUniformLocation( shaderProgram, "height" );
-
 	cameraAnglesVector[ 2 ] += .01f;
 	cameraPositionVector[ 2 ] -= .01f;
+	
 	gl->uniform3fv( cameraPosition, cheerp::MakeTypedArray( cameraPositionVector ) );
 	gl->uniform3fv( cameraAngles, cheerp::MakeTypedArray( cameraAnglesVector ) );
 
-	gl->uniform1f( near, 0.0 );
-	gl->uniform1f( far, 10.0 );
-	gl->uniform1f( width, 1.0 );
-	gl->uniform1f( height, 1.0 );
+	perspective = gl->getUniformLocation( shaderProgram, "perspective" );
+	float perspectiveMatrix[ 4 ][ 4 ] = {
+			{ 1.0f / frustrumWidth, 0.0f, 0.0f, 0.0f }, 
+			{ 0.0f, 1.0f / frustrumHeight, 0.0f, 0.0f }, 
+			{ 0.0f, 0.0f, -2.0f / ( frustrumFar - frustrumNear ), 0.0f },
+			{ 0.0f, 0.0f, -( frustrumFar + frustrumNear ) / ( frustrumFar - frustrumNear ), 1.0f }
+	};
+	gl->uniformMatrix4fv( perspective, false, cheerp::MakeTypedArray( &perspectiveMatrix[ 0 ][ 0 ] ) );
+
 
 	gl->drawArrays( gl->get_TRIANGLES(), 0, verticyCount );
 	client::requestAnimationFrame( cheerp::Callback( Update ) );
@@ -70,44 +75,32 @@ void Renderer::CreateShader()
 const char* Renderer::vertexShaderSource = 
 	"uniform vec3 cameraPosition;\n"
 	"uniform vec3 cameraAngles;\n"
-	"uniform float near;\n"
+/*	"uniform float near;\n"
 	"uniform float far;\n"
 	"uniform float width;\n"
-	"uniform float height;\n"
+	"uniform float height;\n"*/
+	"uniform mat4 perspective;\n"
 	"attribute vec3 a_position;\n"
 	"void main() {\n"
-/*	"\tfloat x = ( a_position.x - cameraPosition.x );\n"
-	"\tfloat y = ( a_position.y - cameraPosition.y );\n"
-	"\tfloat z = ( a_position.z - cameraPosition.z );\n"
-	"\tvec4 projection;\n"
-	"\tprojection.x = cameraPosition.y * ( sin( cameraAngles.z ) * y + cameraPosition.z * x );\n"
-	"\tprojection.y = sin( cameraAngles.x ) * ( cameraPosition.y * z + sin( cameraAngles.y ) * ( sin( cameraAngles.z ) * y + cameraPosition.z * x ) ) + cameraPosition.x * ( cameraPosition.z * y - sin( cameraAngles.z ) * x );\n"
-	"\tprojection.z = cameraPosition.x * ( cameraPosition.y * z + sin( cameraAngles.y ) * ( sin( cameraAngles.z ) * y + cameraPosition.z * x ) ) - sin( cameraAngles.x ) * ( cameraPosition.z * y - sin( cameraAngles.z ) * x );\n"
-	"\tprojection.w = 1.0;\n"*/
-	////////////////////////////////////////////////
+		//Part of the camera transform!//
 		"\tmat3 a = mat3( vec3( 1, 0, 0 ), \n"
-				"\t\tvec3( 0, cos( cameraAngles.x ), sin( cameraAngles.x ) ), \n"
-				"\t\tvec3( 0, -sin( cameraAngles.x ), cos( cameraAngles.x ) ) );\n"
+				"\t\t\tvec3( 0, cos( cameraAngles.x ), sin( cameraAngles.x ) ), \n"
+				"\t\t\tvec3( 0, -sin( cameraAngles.x ), cos( cameraAngles.x ) ) );\n"
 		"\tmat3 b = mat3( vec3( cos( cameraAngles.y ), 0, -sin( cameraAngles.y ) ), \n"
-				"\t\tvec3( 0, 1, 0 )\n, "
-				"\t\tvec3( sin( cameraAngles.y ), 0, cos( cameraAngles.y ) ) );\n"
+				"\t\t\tvec3( 0, 1, 0 )\n, "
+				"\t\t\tvec3( sin( cameraAngles.y ), 0, cos( cameraAngles.y ) ) );\n"
 		"\tmat3 c = mat3( vec3( cos( cameraAngles.z ), sin( cameraAngles.z ), 0 ), \n"
-				"\t\tvec3( -sin( cameraAngles.z ), cos( cameraAngles.z ), 0 ),\n"
-				"\t\tvec3( 0, 0, 1 ) );\n"
-/*		"\tmat4 m = mat4("
-				"\t\tvec4( 1.0, 0.0, 0.0, 0.0 ), \n"
-				"\t\tvec4( 0.0, 1.0, 0.0, 0.0 ), \n"
-				"\t\tvec4( 0.0, 0.0, -2.0 / 10.0, 0.0 ), \n"
-				"\t\tvec4( 0.0, 0.0, 1.0, 1.0 ) );\n"
-*///		"\tgl_Position = vec4( a * b * c * ( a_position - cameraPosition ).xyz, 1.0 );\n"
-		"\tmat4 m = mat4("
-				"\t\tvec4( 1.0 / width, 0.0, 0.0, 0.0 ), \n"
-				"\t\tvec4( 0.0, 1.0 / height, 0.0, 0.0 ), \n"
-				"\t\tvec4( 0.0, 0.0, -2.0 / ( far - near ), 0.0 ), \n"
-				"\t\tvec4( 0.0, 0.0, -( far + near ) / ( far - near ), 1.0 ) );\n"
-		"\tgl_Position = vec4( a * b * c * ( a_position - cameraPosition ), 1.0 ) * m;\n"
+				"\t\t\tvec3( -sin( cameraAngles.z ), cos( cameraAngles.z ), 0 ),\n"
+				"\t\t\tvec3( 0, 0, 1 ) );\n"
+	/*	"\tmat4 m = mat4("
+				"\t\t\tvec4( 1.0 / width, 0.0, 0.0, 0.0 ), \n"
+				"\t\t\tvec4( 0.0, 1.0 / height, 0.0, 0.0 ), \n"
+				"\t\t\tvec4( 0.0, 0.0, -2.0 / ( far - near ), 0.0 ), \n"
+				"\t\t\tvec4( 0.0, 0.0, -( far + near ) / ( far - near ), 1.0 ) );\n"*/
+		"\tgl_Position = vec4( a * b * c * ( a_position - cameraPosition ), 1.0 ) * perspective;\n"
+	//	"gl_Position = vec4( a_position.x, a_position.y, a_position.z, 1.0 );"
 	"}\n";
 const char* Renderer::fragmentShaderSource = 
 	"void main() {\n"
-	"\tgl_FragColor = vec4( 0.0, 1.0, 0.0, 1.0 );\n"
+		"\tgl_FragColor = vec4( 0.0, 1.0, 0.0, 1.0 );\n"
 	"}\n";

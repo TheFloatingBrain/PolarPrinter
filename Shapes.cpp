@@ -42,7 +42,7 @@ std::vector< float > GenerateHollowGear( unsigned int sides, float width, float 
 	{
 		x = ( cos( DELTA_C * ( i + 1.f ) ) * scale );
 		y = ( sin( DELTA_C * ( i + 1.f ) ) * scale );
-		float z = 0.f;
+		float z = -4.f;
 		//Point on circle.//
 		PushPoint( std::move( gear ), lastX * width, lastY * width, z );
 		PushPoint( std::move( gear ), lastX, lastY, z );
